@@ -1,7 +1,10 @@
 var x
 var y
+var z
 begin
     read x
     read y
+    read z
     write x * x + y
+    write z
 end

@@ -28,9 +28,9 @@ in
       | Int n -> ([CONST n], env)
       | Var x -> let n = place_on_stack x env in ([TOP; LOAD n], env)
       | Binop (op, e1, e2) -> 
-         let (e1_comp, _) = comp_aexp e1 env in
-         let (e2_comp, env2) = comp_aexp e2 (None :: env) in
-         (e1_comp @ [PUSH] @ e2_comp @ [PRIM op], env2)
+         let (e1_comp, env1) = comp_aexp e1 env in
+         let (e2_comp, env2) = comp_aexp e2 (None :: env1) in
+         (e1_comp @ [PUSH] @ e2_comp @ [PRIM op], (List.tl env2))
       | _ -> failwith "not implemented"
 in     
    let rec compile (stmt: stmt) (env: var_stack): cmd list * var_stack = 
@@ -42,11 +42,10 @@ in
       | Read _ -> (*TODO: add looking if var is declared *)([READ; PUSH], env)
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
-                  
       | _ -> failwith "not implemented"
 in 
-   let (res, sad) = compile stmt (make_var_stack var_list) 
-in let _ = debug_print_var_list sad 
+   let (res, _) = compile stmt (make_var_stack var_list) 
+(* in let _ = debug_print_var_list sad  *)
 in (res, [])
   (* 1) local variables - add to starting env local variables
      2) local functions - compile functions
