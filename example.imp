@@ -1,6 +1,8 @@
 var x
+var y
 begin
     read x
-    if x = 0 then skip
-    else while true do write 42
+    write x + x
+    read y
+    write y
 end

@@ -33,8 +33,8 @@ in
          (e1_comp @ [PUSH] @ e2_comp @ [PRIM op], (List.tl env2))
       | _ -> failwith "not implemented"
 in
-   let comp_bexp e env: cmd list * var_stack = 
-      match e with
+   let comp_bexp be env: cmd list * var_stack = 
+      match be with
       | Bool b -> ([if b then CONST 1 else CONST 0], env)
       | Cmp(op, e1, e2) -> 
          let (e1_comp, env1) = comp_aexp e1 env in
@@ -48,7 +48,8 @@ in
          (fun (cmd_list, env) s -> 
             let (s_cmp, new_env) = compile s env in
             (cmd_list @ s_cmp, new_env)) ([], env) lst
-      | Read _ -> (*TODO: add looking if var is declared *)([READ; PUSH], env)
+      | Read x -> ([TOP; PUSH; READ; STORE (place_on_stack x env)], env)
+         (* TODO: add looking if var is declared([READ; PUSH], env) *)
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
       (* | Assgn(x, e) ->  *)
@@ -63,9 +64,10 @@ in
          ([WHILE(b_comp, s_comp)], env') 
       | _ -> failwith "not implemented"
 in 
-   let (res, _) = compile stmt (make_var_stack var_list) 
+let starting_stack = make_var_stack var_list in 
+   let (res, _) = compile stmt starting_stack 
 (* in let _ = debug_print_var_list sad  *)
-in (res, [])
+in ([ENTER (starting_stack |> List.length)] @ res, [])
   (* 1) local variables - add to starting env local variables
      2) local functions - compile functions
      3) statement block *)
