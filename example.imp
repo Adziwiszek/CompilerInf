@@ -1,0 +1,7 @@
+var x
+var y
+begin
+    read x
+    read y
+    write x * x + y
+end
