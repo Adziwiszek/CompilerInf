@@ -51,11 +51,16 @@ in
       | Read _ -> (*TODO: add looking if var is declared *)([READ; PUSH], env)
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
+      (* | Assgn(x, e) ->  *)
       | If(be, s1, s2) -> 
          let (be_comp, _) = comp_bexp be env in 
          let (s1_comp, _) = compile s1 env in 
          let (s2_comp, _) = compile s2 env in 
          (be_comp @ [BRANCH(s1_comp, s2_comp)], env)
+      | While(b, s) -> 
+         let (b_comp, env') = comp_bexp b env in 
+         let (s_comp, _) = compile s env' in
+         ([WHILE(b_comp, s_comp)], env') 
       | _ -> failwith "not implemented"
 in 
    let (res, _) = compile stmt (make_var_stack var_list) 
