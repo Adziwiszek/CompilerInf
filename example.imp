@@ -2,7 +2,9 @@ var x
 var y
 begin
     read x
-    write x + x
-    read y
-    write y
+
+    write x 
+    x := 69 
+    write x
+
 end

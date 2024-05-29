@@ -2,24 +2,25 @@ open Ast
 
 type var_stack = var option list
 
-let debug_print_var_list (lst: var_stack): unit = List.iter 
+let debug_print_var_stack (lst: var_stack): unit = List.iter 
    (fun x -> match x with 
              | None -> print_endline "..."
              | Some s -> print_endline s) lst
 
 (* returns position of variable on stack *)
 let place_on_stack (name: var) (env: var_stack): int = 
-   let res = List.find_index (fun s -> 
-   (match s with | None -> false | Some s -> s = name)) env 
-   in (match res with | None -> failwith ("unbound variable: "^name) | Some n -> n)
+   let res = List.find_index 
+   (fun s -> (match s with 
+             | None -> false 
+             | Some s -> s = name)) env 
+   in (match res with 
+      | None -> failwith ("unbound variable: "^name) 
+      | Some n -> n)
 
 
 let compile_prog (prog : prog) : vm_prog =
-   let (var_list, _, stmt) = prog in
-   (* let rec make_var_stack (v_list: var list) (acc: var option list): var option list =
-      match v_list with 
-      | [] -> acc 
-      | v :: v_list' -> make_var_stack v_list' (Some v :: acc) *)
+   let (var_list, _, stmt) = prog 
+in
    let make_var_stack (v_list: var list): var option list = 
       List.fold_left (fun acc v -> Some v :: acc) [] v_list
 in
@@ -48,11 +49,13 @@ in
          (fun (cmd_list, env) s -> 
             let (s_cmp, new_env) = compile s env in
             (cmd_list @ s_cmp, new_env)) ([], env) lst
-      | Read x -> ([TOP; PUSH; READ; STORE (place_on_stack x env)], env)
-         (* TODO: add looking if var is declared([READ; PUSH], env) *)
+      | Read x -> 
+         ([TOP; PUSH; READ; STORE (place_on_stack x env)], env)
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
-      (* | Assgn(x, e) ->  *)
+      | Assgn(x, e) -> 
+         let (e_cmp, new_env) = comp_aexp e env in 
+         ([TOP; PUSH] @ e_cmp @ [STORE (place_on_stack x env)], new_env)
       | If(be, s1, s2) -> 
          let (be_comp, _) = comp_bexp be env in 
          let (s1_comp, _) = compile s1 env in 
