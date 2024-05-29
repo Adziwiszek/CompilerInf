@@ -32,6 +32,15 @@ in
          let (e2_comp, env2) = comp_aexp e2 (None :: env1) in
          (e1_comp @ [PUSH] @ e2_comp @ [PRIM op], (List.tl env2))
       | _ -> failwith "not implemented"
+in
+   let comp_bexp e env: cmd list * var_stack = 
+      match e with
+      | Bool b -> ([if b then CONST 1 else CONST 0], env)
+      | Cmp(op, e1, e2) -> 
+         let (e1_comp, env1) = comp_aexp e1 env in
+         let (e2_comp, env2) = comp_aexp e2 (None :: env1) in
+         (e1_comp @ [PUSH] @ e2_comp @ [CMP op], (List.tl env2))
+      | _ -> failwith "not implemented"
 in     
    let rec compile (stmt: stmt) (env: var_stack): cmd list * var_stack = 
       match stmt with 
@@ -42,6 +51,11 @@ in
       | Read _ -> (*TODO: add looking if var is declared *)([READ; PUSH], env)
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
+      | If(be, s1, s2) -> 
+         let (be_comp, _) = comp_bexp be env in 
+         let (s1_comp, _) = compile s1 env in 
+         let (s2_comp, _) = compile s2 env in 
+         (be_comp @ [BRANCH(s1_comp, s2_comp)], env)
       | _ -> failwith "not implemented"
 in 
    let (res, _) = compile stmt (make_var_stack var_list) 

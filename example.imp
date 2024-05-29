@@ -1,10 +1,9 @@
 var x
 var y
-var z
+
 begin
     read x
     read y
-    read z
-    write x * x + y
-    write z
+    if x > y then write x
+    else write y
 end
