@@ -9,4 +9,5 @@ end
 
 begin
     x := foo (13 ,42)
+    write x
 end

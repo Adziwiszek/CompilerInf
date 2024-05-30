@@ -17,6 +17,12 @@ let place_on_stack (name: var) (env: var_stack): int =
       | None -> failwith ("unbound variable: "^name) 
       | Some n -> n)
 
+let first_none_on_stack (stack: var_stack): int = 
+   let none_index = List.find_index 
+   (fun x -> match x with | None -> true | _ -> false) stack in 
+   match none_index with 
+   | None -> 0
+   | Some n -> n
 
 let compile_prog (prog : prog) : vm_prog =
    let (var_list, fun_list, stmt) = prog 
@@ -60,8 +66,8 @@ in
       | Write e -> 
          let (e_cmp, new_env) = comp_aexp e env in (e_cmp @ [WRITE], new_env)
       | Assgn(x, e) -> 
-         let (e_cmp, new_env) = comp_aexp e env in 
-         ([TOP; PUSH] @ e_cmp @ [STORE (place_on_stack x env)], new_env)
+         let (e_cmp, _) = comp_aexp e (None :: env) in
+         ([TOP; PUSH] @ e_cmp @ [STORE (place_on_stack x env)], env)
       | If(be, s1, s2) -> 
          let (be_comp, _) = comp_bexp be env in 
          let (s1_comp, _) = compile s1 env in 
@@ -71,15 +77,28 @@ in
          let (b_comp, env') = comp_bexp b env in 
          let (s_comp, _) = compile s env' in
          ([WHILE(b_comp, s_comp)], env') 
-      | _ -> failwith "not implemented"
-in 
-let starting_stack = make_var_stack var_list in 
+      | Return e -> 
+         (* let _ = debug_print_var_stack env in *)
+         let (e_comp, _) = comp_aexp e env in 
+         (e_comp @ [LEAVE (first_none_on_stack env); RET], env)
+      (* | _ -> failwith "not implemented" *)
+in  
+   let comp_fun (func:func): var * cmd list = 
+      match func with 
+      |  Func(name, args, local_vars, _, body) ->
+         let arg_stack = make_var_stack args in 
+         let local_var_stack = make_var_stack local_vars in 
+         let final_stack = (local_var_stack @ [None] @ arg_stack) in
+         (* let _ = debug_print_var_stack final_stack in *)
+         let (res,_) = compile body final_stack in
+         (name, [ENTER (local_var_stack |> List.length)] @ res)
+in
+   let compiled_functions fun_list = List.fold_left 
+   (fun acc f -> comp_fun f :: acc) [] fun_list
+in
+   let starting_stack = make_var_stack var_list in 
    let (res, _) = compile stmt starting_stack 
-(* in let _ = debug_print_var_list sad  *)
-in ([ENTER (starting_stack |> List.length)] @ res, [])
-  (* 1) local variables - add to starting env local variables
-     2) local functions - compile functions
-     3) statement block *)
-  (* compile (prog: prog) (env: var option list): vm_prog *)
-  (* TODO: implement this function *)
-  (* failwith "Not implemented asd" *)
+in 
+   ([ENTER (starting_stack |> List.length)] @ res, 
+    compiled_functions fun_list)
+
