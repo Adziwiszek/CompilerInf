@@ -19,7 +19,7 @@ let place_on_stack (name: var) (env: var_stack): int =
 
 
 let compile_prog (prog : prog) : vm_prog =
-   let (var_list, _, stmt) = prog 
+   let (var_list, fun_list, stmt) = prog 
 in
    let make_var_stack (v_list: var list): var option list = 
       List.fold_left (fun acc v -> Some v :: acc) [] v_list
@@ -32,7 +32,13 @@ in
          let (e1_comp, env1) = comp_aexp e1 env in
          let (e2_comp, env2) = comp_aexp e2 (None :: env1) in
          (e1_comp @ [PUSH] @ e2_comp @ [PRIM op], (List.tl env2))
-      | _ -> failwith "not implemented"
+      | Call(f_name, args) -> 
+         let push_args = List.fold_left 
+         (fun (acc: cmd list) (arg: aexp): cmd list -> 
+            let (arg_comp, _) = comp_aexp arg env in
+            acc @ arg_comp @ [PUSH]) [] args in
+         (push_args @ [CALL f_name] @ [LEAVE (List.length args)], env)
+      (* | _ -> failwith "not implemented" *)
 in
    let comp_bexp be env: cmd list * var_stack = 
       match be with

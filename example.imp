@@ -1,10 +1,12 @@
 var x
-var y
+
+function foo (x , y)
+    var z
 begin
-    read x
+    z := x * x
+    return z + y
+end
 
-    write x 
-    x := 69 
-    write x
-
+begin
+    x := foo (13 ,42)
 end
