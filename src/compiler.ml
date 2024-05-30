@@ -44,16 +44,25 @@ in
             let (arg_comp, _) = comp_aexp arg env in
             acc @ arg_comp @ [PUSH]) [] args in
          (push_args @ [CALL f_name] @ [LEAVE (List.length args)], env)
-      (* | _ -> failwith "not implemented" *)
 in
-   let comp_bexp be env: cmd list * var_stack = 
+   let rec comp_bexp be env: cmd list * var_stack = 
       match be with
       | Bool b -> ([if b then CONST 1 else CONST 0], env)
       | Cmp(op, e1, e2) -> 
          let (e1_comp, env1) = comp_aexp e1 env in
          let (e2_comp, env2) = comp_aexp e2 (None :: env1) in
          (e1_comp @ [PUSH] @ e2_comp @ [CMP op], (List.tl env2))
-      | _ -> failwith "not implemented"
+      | And(be1, be2) ->
+         let (be1_comp, env1) = comp_bexp be1 env in
+         let (be2_comp, env2) = comp_bexp be2 env1 in
+         (be1_comp @ [BRANCH(be2_comp, [CONST 0])], env2)
+      | Or(be1, be2) ->
+         let (be1_comp, env1) = comp_bexp be1 env in
+         let (be2_comp, env2) = comp_bexp be2 env1 in
+         (be1_comp @ [BRANCH([CONST 1], be2_comp)], env2)
+      | Not be -> 
+         let (be1_comp, env1) = comp_bexp be env in
+         (be1_comp @ [BRANCH([CONST 0], [CONST 1])], env1)
 in     
    let rec compile (stmt: stmt) (env: var_stack): cmd list * var_stack = 
       match stmt with 
@@ -81,7 +90,6 @@ in
          (* let _ = debug_print_var_stack env in *)
          let (e_comp, _) = comp_aexp e env in 
          (e_comp @ [LEAVE (first_none_on_stack env); RET], env)
-      (* | _ -> failwith "not implemented" *)
 in  
    let comp_fun (func:func): var * cmd list = 
       match func with 
