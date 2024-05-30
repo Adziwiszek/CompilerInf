@@ -91,22 +91,20 @@ in
          let (e_comp, _) = comp_aexp e env in 
          (e_comp @ [LEAVE (first_none_on_stack env); RET], env)
 in  
-   let comp_fun (func:func): var * cmd list = 
-      match func with 
-      |  Func(name, args, local_vars, _, body) ->
-         let arg_stack = make_var_stack args in 
-         let local_var_stack = make_var_stack local_vars in 
-         let final_stack = (local_var_stack @ [None] @ arg_stack) in
-         (* let _ = debug_print_var_stack final_stack in *)
-         let (res,_) = compile body final_stack in
-         (name, [ENTER (local_var_stack |> List.length)] @ res)
-in
-   let compiled_functions fun_list = List.fold_left 
-   (fun acc f -> comp_fun f :: acc) [] fun_list
+   let compile_functions fun_list = 
+      let comp_fun (func:func): var * cmd list = 
+         match func with 
+         |  Func(name, args, local_vars, _, body) ->
+            let arg_stack = make_var_stack args in 
+            let local_var_stack = make_var_stack local_vars in 
+            let (res,_) = compile body (local_var_stack @ [None] @ arg_stack) 
+            in (name, [ENTER (local_var_stack |> List.length)] @ res)
+      in
+      List.fold_left (fun acc f -> comp_fun f :: acc) [] fun_list
 in
    let starting_stack = make_var_stack var_list in 
    let (res, _) = compile stmt starting_stack 
 in 
    ([ENTER (starting_stack |> List.length)] @ res, 
-    compiled_functions fun_list)
+    compile_functions fun_list)
 
